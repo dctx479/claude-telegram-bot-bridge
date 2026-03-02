@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Telegram bot that integrates with Claude Code SDK to run Claude Code sessions and skills from Telegram. Written in Python 3.11+, fully async. All user-facing strings are in Chinese (zh-CN).
+Telegram bot that integrates with Claude Code SDK to run Claude Code sessions and skills from Telegram. Written in Python 3.11+, fully async.
 
 ## Code Style
 
 - All code, comments, variable names, shell messages, and log strings must be in **English**
-- User-facing strings sent to Telegram (bot replies) are in Chinese (zh-CN)
+- Bot preset strings (command responses, status messages, error prompts) should be kept **minimal and in English**
+- The LLM (Claude) handles language adaptation naturally based on the user's conversation language — no hardcoded i18n needed
 
 
 ```bash

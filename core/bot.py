@@ -759,6 +759,12 @@ class TelegramBot:
                 reply = f"✅ Switched to session: {msg}"
                 await update.message.reply_text(reply)
                 log_debug(user_id, "bot", reply)
+                # Send last assistant message as progress summary
+                last_msg = project_chat_handler.get_session_last_assistant_message(sid)
+                if last_msg:
+                    progress = f"📋 {last_msg}"
+                    await update.message.reply_text(progress)
+                    log_debug(user_id, "bot", progress)
                 return
             else:
                 reply = "❌ Invalid number, please try again."

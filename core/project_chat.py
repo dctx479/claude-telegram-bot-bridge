@@ -480,6 +480,40 @@ class ProjectChatHandler:
                 break
         return results
 
+    def get_session_last_assistant_message(self, session_id: str, max_chars: int = 300) -> Optional[str]:
+        """Extract the last assistant text message from a session JSONL file."""
+        filepath = CONVERSATIONS_DIR / f"{session_id}.jsonl"
+        if not filepath.exists():
+            return None
+        try:
+            last_text = None
+            with open(filepath, "r", encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        d = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    if d.get("type") != "assistant":
+                        continue
+                    msg = d.get("message", {})
+                    if msg.get("role") != "assistant":
+                        continue
+                    content = msg.get("content", [])
+                    if not isinstance(content, list):
+                        continue
+                    for block in content:
+                        if isinstance(block, dict) and block.get("type") == "text":
+                            text = block.get("text", "").strip()
+                            if text:
+                                last_text = text
+            if not last_text:
+                return None
+            if len(last_text) > max_chars:
+                last_text = last_text[:max_chars] + "..."
+            return last_text
+        except Exception:
+            return None
+
     @staticmethod
     def _extract_first_user_message(filepath: Path) -> Optional[str]:
         try:
