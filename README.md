@@ -70,7 +70,7 @@ If you prefer not to use Claude Code, run the installation script directly:
 ```bash
 git clone https://github.com/terranc/claude-telegram-bot-bridge
 cd claude-telegram-bot-bridge
-./install.sh
+./setup.sh
 ```
 
 Then start the bot:
@@ -142,14 +142,14 @@ Claude: ...
 
 ```bash
 # Install as macOS startup service — survives reboots
-tgbot ~/my-project --install
+./start.sh --path ~/my-project --install
 
 # Check status anytime
-tgbot ~/my-project --status
+./start.sh --path ~/my-project --status
 # 🟢 Bot is running (PID: 12345)
 
 # Uninstall when done
-tgbot ~/my-project --uninstall
+./start.sh --path ~/my-project --uninstall
 ```
 
 ## Bot Commands
@@ -191,10 +191,10 @@ Any unrecognized `/command` is also forwarded as a skill invocation.
 ## Lifecycle Management
 
 ```bash
-tgbot . --status       # Check if running
-tgbot . --stop         # Stop
-tgbot . --install      # macOS launchd auto-start on boot
-tgbot . --uninstall    # Remove auto-start
+./start.sh --path /path/to/project --status       # Check if running
+./start.sh --path /path/to/project --stop         # Stop
+./start.sh --path /path/to/project --install      # macOS launchd auto-start on boot
+./start.sh --path /path/to/project --uninstall    # Remove auto-start
 ```
 
 The daemon auto-restarts on crash, logs each crash with exit code and uptime, and stops restarting after 5 rapid crashes in 60 seconds.
@@ -202,7 +202,7 @@ The daemon auto-restarts on crash, logs each crash with exit code and uptime, an
 ## Debugging
 
 ```bash
-tgbot . --debug
+./start.sh --path /path/to/project --debug
 # Or: BOT_DEBUG=1 python -m telegram_bot --path .
 ```
 

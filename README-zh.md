@@ -70,7 +70,7 @@ claude
 ```bash
 git clone https://github.com/terranc/claude-telegram-bot-bridge
 cd claude-telegram-bot-bridge
-./install.sh
+./setup.sh
 ```
 
 然后启动 Bot：
@@ -142,14 +142,14 @@ Claude:  ...
 
 ```bash
 # 安装为 macOS 开机自启服务 — 重启后自动恢复
-tgbot ~/my-project --install
+./start.sh --path ~/my-project --install
 
 # 随时查看状态
-tgbot ~/my-project --status
+./start.sh --path ~/my-project --status
 # 🟢 Bot is running (PID: 12345)
 
 # 不需要时卸载
-tgbot ~/my-project --uninstall
+./start.sh --path ~/my-project --uninstall
 ```
 
 ## 机器人命令
@@ -191,10 +191,10 @@ tgbot ~/my-project --uninstall
 ## 生命周期管理
 
 ```bash
-tgbot . --status       # 查看运行状态
-tgbot . --stop         # 停止
-tgbot . --install      # macOS launchd 开机自启
-tgbot . --uninstall    # 移除开机自启
+./start.sh --path /path/to/project --status       # 查看运行状态
+./start.sh --path /path/to/project --stop         # 停止
+./start.sh --path /path/to/project --install      # macOS launchd 开机自启
+./start.sh --path /path/to/project --uninstall    # 移除开机自启
 ```
 
 守护进程崩溃后自动重启，每次崩溃记录退出码和运行时间，60 秒内连续崩溃 5 次后停止重启。
@@ -202,7 +202,7 @@ tgbot . --uninstall    # 移除开机自启
 ## 调试
 
 ```bash
-tgbot . --debug
+./start.sh --path /path/to/project --debug
 # 或: BOT_DEBUG=1 python -m telegram_bot --path .
 ```
 

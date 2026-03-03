@@ -21,7 +21,7 @@ if [ ! -d "$VENV_DIR" ] || [ ! -f "$ENV_FILE" ]; then
     echo -e "${RED}❌ Installation not found${NC}"
     echo ""
     echo "Please run the installation script first:"
-    echo -e "  ${BLUE}./install.sh${NC}"
+    echo -e "  ${BLUE}./setup.sh${NC}"
     echo ""
     echo "The installation wizard will guide you through:"
     echo "  • System requirements check"

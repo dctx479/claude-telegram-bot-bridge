@@ -39,10 +39,10 @@ Options:
 
 Examples:
   # Interactive installation (recommended)
-  ./install.sh
+  ./setup.sh
 
   # Silent installation
-  ./install.sh --silent --token "123456789:ABCdefGHI..." --allowed-users "123,456"
+  ./setup.sh --silent --token "123456789:ABCdefGHI..." --allowed-users "123,456"
 
 EOF
     exit 0

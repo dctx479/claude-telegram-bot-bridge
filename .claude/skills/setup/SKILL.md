@@ -150,7 +150,7 @@ Provide all prompts and messages in the user's detected language. Support at lea
 
 ## Notes
 
-- This skill replaces the need to run `./install.sh` manually
+- This skill replaces the need to run `./setup.sh` manually
 - It provides a more conversational, language-friendly installation experience
 - Users can ask questions during installation and get help in their language
 - The skill should be patient and guide users step-by-step
