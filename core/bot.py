@@ -441,7 +441,10 @@ class TelegramBot:
         user_id = update.effective_user.id
         log_debug(user_id, "command", "/skills")
 
-        await update.message.chat.send_action(action="typing")
+        try:
+            await update.message.chat.send_action(action="typing")
+        except Exception:
+            pass
 
         prompt = (
             "List all installed skills, grouped by global and project.\n"
@@ -974,11 +977,20 @@ class TelegramBot:
 
     async def _error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE):
         """Global error handler for uncaught exceptions in handlers."""
-        logger.error("Unhandled exception:", exc_info=context.error)
+        err = context.error
+        # Transient network errors are expected — log concisely without traceback.
+        if isinstance(err, telegram.error.NetworkError):
+            logger.warning(f"Network error (will retry): {err}")
+            return
+        if isinstance(err, telegram.error.TimedOut):
+            logger.warning(f"Request timed out (will retry): {err}")
+            return
+
+        logger.error("Unhandled exception:", exc_info=err)
         if isinstance(update, Update) and update.effective_chat:
             try:
                 await context.bot.send_message(
-                    update.effective_chat.id, f"❌ Internal error: {context.error}"
+                    update.effective_chat.id, f"❌ Internal error: {err}"
                 )
             except Exception:
                 pass
@@ -1073,6 +1085,8 @@ class TelegramBot:
                 t.result()
             except asyncio.CancelledError:
                 pass
+            except (telegram.error.NetworkError, telegram.error.TimedOut) as e:
+                logger.warning(f"Background task network error for user {user_id}: {e}")
             except Exception as e:
                 logger.error(
                     f"Background task failed for user {user_id}: {e}", exc_info=True
@@ -1282,7 +1296,10 @@ class TelegramBot:
 
         async def run_task():
             session = await session_manager.get_session(user_id)
-            await update.message.chat.send_action(action="typing")
+            try:
+                await update.message.chat.send_action(action="typing")
+            except Exception:
+                pass
             try:
                 response = await project_chat_handler.process_message(
                     user_message=slash_cmd,

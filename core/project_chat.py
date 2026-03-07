@@ -31,6 +31,27 @@ from telegram_bot.utils.config import config
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Suppress noisy "Task exception was never retrieved" errors from the SDK.
+#
+# The Claude Code SDK uses anyio task groups internally.  When we cancel a
+# reader task the SDK may spawn a background disconnect() task that raises
+# RuntimeError("Attempted to exit cancel scope …").  Because we never hold
+# a reference to that orphan task, asyncio's Task.__del__ logs an ERROR via
+# the "asyncio" logger.  The filter below silences that specific message.
+# ---------------------------------------------------------------------------
+class _CancelScopeLogFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.exc_info and record.exc_info[1]:
+            exc = record.exc_info[1]
+            if isinstance(exc, RuntimeError) and "cancel scope" in str(exc):
+                return False
+        return True
+
+
+logging.getLogger("asyncio").addFilter(_CancelScopeLogFilter())
+
+
 def _patch_sdk_cli_resolution() -> None:
     """Make SDK default transport honor configured CLAUDE_CLI_PATH."""
     marker = "_telegram_bot_cli_path_patch_applied"
@@ -138,6 +159,8 @@ class _PendingRequest:
     last_assistant_texts: List[str] = field(default_factory=list)
     synthetic_response: Optional[str] = None
     streaming_handler: Optional[Any] = None  # StreamingMessageHandler instance
+    bot: Optional[Any] = None                 # PTB Bot instance for late delivery
+    timed_out: bool = False                   # Flag: was this request timed out?
 
 
 @dataclass
@@ -293,13 +316,28 @@ class ProjectChatHandler:
                 except Exception as e:
                     logger.error(f"Error setting future result: {e}")
 
-        # Disconnect client
-        try:
-            await asyncio.wait_for(state.client.disconnect(), timeout=3.0)
-        except asyncio.TimeoutError:
+        # Disconnect client.  The cancel-scope RuntimeError is caught both
+        # here (explicit call) and by the event-loop handler (orphan tasks).
+        async def _safe_disconnect() -> None:
+            try:
+                await state.client.disconnect()
+            except RuntimeError as e:
+                if "cancel scope" in str(e):
+                    logger.debug(f"Benign cancel-scope error during disconnect for user {user_id}: {e}")
+                else:
+                    logger.error(f"Error disconnecting client for user {user_id}: {e}")
+            except Exception as e:
+                logger.error(f"Error disconnecting client for user {user_id}: {e}")
+
+        dc_task = asyncio.create_task(_safe_disconnect())
+        done, _ = await asyncio.wait({dc_task}, timeout=3.0)
+        if not done:
             logger.warning(f"Client disconnect for user {user_id} timed out")
-        except Exception as e:
-            logger.error(f"Error disconnecting client for user {user_id}: {e}")
+            dc_task.cancel()
+            try:
+                await dc_task
+            except (asyncio.CancelledError, Exception):
+                pass
 
         return True
 
@@ -438,6 +476,9 @@ class ProjectChatHandler:
                             req.future.set_result(response)
                         except Exception as e:
                             logger.error(f"Error setting future result: {e}")
+                    elif req.timed_out and req.bot:
+                        # Future already resolved (timeout) — push late result to Telegram
+                        asyncio.create_task(self._deliver_late_result(req, content))
                     state.pending.popleft()
         except asyncio.CancelledError:
             logger.debug(f"Reader loop cancelled for user {user_id}")
@@ -466,6 +507,18 @@ class ProjectChatHandler:
                         req.future.set_result(ChatResponse(content=f"❌ Error: {err}", success=False, error=err, session_id=state.last_session_id))
                     except Exception as set_err:
                         logger.error(f"Error setting error result: {set_err}")
+
+    async def _deliver_late_result(self, req: _PendingRequest, content: str) -> None:
+        """Push late result directly to Telegram when a timed-out task completes."""
+        try:
+            prefix = "✅ (delayed result)\n\n"
+            full = prefix + content
+            # Split for Telegram 4096 char limit
+            for i in range(0, len(full), 4000):
+                await req.bot.send_message(req.chat_id, full[i:i + 4000])
+            logger.info(f"Delivered late result to user {req.user_id} ({len(full)} chars)")
+        except Exception as e:
+            logger.error(f"Failed to deliver late result to user {req.user_id}: {e}")
 
     async def process_message(
         self,
@@ -537,9 +590,12 @@ class ProjectChatHandler:
             raise
 
         except asyncio.TimeoutError:
-            logger.warning(f"Query timed out for user {user_id} after {PROCESS_TIMEOUT}s")
-            await self.stop(user_id)
-            msg = f"⏰ Timed out after {PROCESS_TIMEOUT}s. Please retry or simplify your request."
+            logger.warning(f"Query timed out for user {user_id} after {PROCESS_TIMEOUT}s — task continues in background")
+            # Don't disconnect — let the task keep running in the background.
+            # Mark the request so _reader_loop can push the result when ready.
+            request.timed_out = True
+            request.bot = bot
+            msg = f"⏰ Still processing (>{PROCESS_TIMEOUT}s). Result will be sent when ready."
             return ChatResponse(content=msg, success=False, error=msg)
 
         except Exception as e:
