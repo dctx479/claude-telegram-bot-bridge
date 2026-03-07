@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import platform
 import re
 import shlex
 import time
@@ -1409,6 +1410,10 @@ class TelegramBot:
         return str(getattr(config, "transcription_provider", "whisper")).strip().lower()
 
     @staticmethod
+    def _is_macos() -> bool:
+        return platform.system() == "Darwin"
+
+    @staticmethod
     def _count_hanzi(text: str) -> int:
         return len(re.findall(r"[\u4e00-\u9fff]", text))
 
@@ -1420,6 +1425,8 @@ class TelegramBot:
         self, *, current_mode: str, message_source: str, user_text: str
     ) -> str:
         del current_mode, user_text
+        if not self._is_macos():
+            return "text"
         if message_source == "voice":
             return "voice"
         return "text"
@@ -1509,6 +1516,21 @@ class TelegramBot:
         preview_text = str(voice_input_preview or "").strip()
         preview_sent_first = False
         if reply_mode != "voice":
+            await self._reply_smart(
+                message,
+                content_with_preview,
+                parse_mode=parse_mode,
+                force_options=force_options,
+                streamed=streamed,
+            )
+            return
+
+        if not self._is_macos():
+            logger.info(
+                "Voice reply disabled on non-macOS user_id=%s platform=%s",
+                user_id,
+                platform.system(),
+            )
             await self._reply_smart(
                 message,
                 content_with_preview,
