@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-03-08
+
+### Added
+- macOS voice reply mode with TTS support: bot automatically replies with voice when user sends voice messages, using macOS `say` command + ffmpeg conversion
+- Smart voice delivery strategy based on response length (voice-only, text+voice, or text-only fallback)
+- `VOICE_REPLY_PERSONA` config for selecting macOS TTS voice persona
+
+### Fixed
+- Voice reply mode gracefully falls back to text on non-macOS platforms
+
+### Changed
+- Updated README documentation (EN/ZH) with voice reply mode usage guide
+
 ## [0.7.0] - 2026-03-08
 
 ### Added
