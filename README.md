@@ -250,14 +250,6 @@ Any unrecognized `/command` is also forwarded as a skill invocation.
 | `VOLCENGINE_TOS_BUCKET_NAME` | Volcengine only | — | TOS bucket used for staging Telegram voice files |
 | `VOLCENGINE_TOS_ENDPOINT` | Volcengine only | — | TOS endpoint (must match your bucket region, e.g. `https://tos-cn-shanghai.volces.com`) |
 | `VOLCENGINE_TOS_REGION` | No | `cn-beijing` | TOS region used by SDK signing |
-| `VOLCENGINE_RESOURCE_ID` | No | `volc.bigasr.auc` | Volcengine `X-Api-Resource-Id` |
-| `VOLCENGINE_SUBMIT_ENDPOINT` | No | `https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit` | Volcengine ASR submit endpoint |
-| `VOLCENGINE_QUERY_ENDPOINT` | No | `https://openspeech.bytedance.com/api/v3/auc/bigmodel/query` | Volcengine ASR query endpoint |
-| `VOLCENGINE_MODEL_NAME` | No | `bigmodel` | Volcengine request `model_name` |
-| `VOLCENGINE_TIMEOUT_SECONDS` | No | `20` | Volcengine request timeout (seconds) |
-| `VOLCENGINE_MAX_RETRIES` | No | `3` | Retry count for Volcengine transcription |
-| `VOLCENGINE_INITIAL_BACKOFF` | No | `1.0` | Initial retry backoff seconds for Volcengine |
-| `MAX_VOICE_DURATION` | No | `300` | Max accepted voice duration in seconds |
 | `FFMPEG_PATH` | No | *(auto-detect)* | Absolute path to ffmpeg binary |
 | `LOG_LEVEL` | No | `INFO` | Logging level |
 | `PROXY_URL` | No | — | HTTP proxy; auto-configures `http_proxy`/`https_proxy`/`all_proxy` |

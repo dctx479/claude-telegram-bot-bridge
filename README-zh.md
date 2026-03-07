@@ -247,14 +247,6 @@ Claude:  ...
 | `VOLCENGINE_TOS_BUCKET_NAME` | 火山渠道必需 | — | 用于中转语音文件的 TOS Bucket 名称 |
 | `VOLCENGINE_TOS_ENDPOINT` | 火山渠道必需 | — | TOS 节点地址（必须与你的 Bucket 区域匹配，如 `https://tos-cn-shanghai.volces.com`） |
 | `VOLCENGINE_TOS_REGION` | 否 | `cn-beijing` | TOS SDK 使用的 region |
-| `VOLCENGINE_RESOURCE_ID` | 否 | `volc.bigasr.auc` | 火山引擎 `X-Api-Resource-Id` |
-| `VOLCENGINE_SUBMIT_ENDPOINT` | 否 | `https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit` | 火山转写 submit 接口地址 |
-| `VOLCENGINE_QUERY_ENDPOINT` | 否 | `https://openspeech.bytedance.com/api/v3/auc/bigmodel/query` | 火山转写 query 接口地址 |
-| `VOLCENGINE_MODEL_NAME` | 否 | `bigmodel` | 火山请求参数 `model_name` |
-| `VOLCENGINE_TIMEOUT_SECONDS` | 否 | `20` | 火山请求超时（秒） |
-| `VOLCENGINE_MAX_RETRIES` | 否 | `3` | 火山转写重试次数 |
-| `VOLCENGINE_INITIAL_BACKOFF` | 否 | `1.0` | 火山转写初始重试退避时间（秒） |
-| `MAX_VOICE_DURATION` | 否 | `300` | 允许的最大语音时长（秒） |
 | `FFMPEG_PATH` | 否 | *（自动检测）* | ffmpeg 二进制绝对路径 |
 | `LOG_LEVEL` | 否 | `INFO` | 日志级别 |
 | `PROXY_URL` | 否 | — | HTTP 代理；自动配置 `http_proxy`/`https_proxy`/`all_proxy` |
