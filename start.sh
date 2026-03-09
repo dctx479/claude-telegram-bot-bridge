@@ -226,7 +226,15 @@ is_running() {
 }
 
 cleanup_pid() {
-    rm -f "$PID_FILE"
+    rm -f "$PID_FILE" 2>/dev/null || true
+}
+
+get_mtime_epoch() {
+    local file="$1"
+    if [ ! -e "$file" ]; then
+        return 1
+    fi
+    stat -f "%m" "$file" 2>/dev/null || stat -c "%Y" "$file" 2>/dev/null
 }
 
 # ── Action handlers ──
@@ -235,13 +243,36 @@ do_status() {
     local pid
     pid="$(read_pid)"
     if [ -z "$pid" ]; then
-        echo "⚪ Bot is not running (no PID file)"
+        echo "🔴 Bot status: unavailable (no PID file; common causes: process exited/crashed, service not started)"
         exit 0
     fi
     if kill -0 "$pid" 2>/dev/null; then
-        echo "🟢 Bot is running (PID: $pid)"
+        local bot_log="$LOGS_DIR/bot.log"
+        local now mtime age_seconds age_minutes
+        local inactive_after_seconds="${STATUS_INACTIVE_SECONDS:-900}"
+
+        if [ ! -f "$bot_log" ]; then
+            echo "🔴 Bot status: unavailable (PID: $pid, bot.log missing; common causes: startup did not complete, log path/permission issue)"
+            exit 2
+        fi
+
+        now="$(date +%s)"
+        mtime="$(get_mtime_epoch "$bot_log")"
+        if [ -z "$mtime" ] || [ "$mtime" -gt "$now" ]; then
+            echo "🔴 Bot status: unavailable (PID: $pid, invalid log timestamp; common causes: filesystem clock/mtime anomaly)"
+            exit 2
+        fi
+
+        age_seconds=$((now - mtime))
+        if [ "$age_seconds" -ge "$inactive_after_seconds" ]; then
+            age_minutes=$((age_seconds / 60))
+            echo "🔴 Bot status: unavailable (PID: $pid, inactive for ${age_minutes}m; common causes: proxy/network down, getUpdates conflict from another instance, worker hung)"
+            exit 2
+        fi
+
+        echo "🟢 Bot status: running (PID: $pid, last log update ${age_seconds}s ago)"
     else
-        echo "🔴 Bot is not running (PID $pid is stale)"
+        echo "🔴 Bot status: unavailable (stale PID: $pid; common causes: process crashed/exited, stale pid file cleanup failed)"
         cleanup_pid
     fi
     exit 0
@@ -396,7 +427,7 @@ do_install() {
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
-    <false/>
+    <true/>
     <key>StandardOutPath</key>
     <string>${LOGS_DIR}/launchd_stdout.log</string>
     <key>StandardErrorPath</key>

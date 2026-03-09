@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import platform
 import re
 import shlex
@@ -93,6 +94,20 @@ class TelegramBot:
     _PATH_KEYWORDS = ("path", "file", "cwd", "dir", "directory", "root")
     _MAX_INFLIGHT_MESSAGES = 3
     _STALE_AUDIO_SECONDS = 24 * 60 * 60
+    _WATCHDOG_INTERVAL = 60
+
+    async def _event_loop_watchdog(self):
+        """Periodically verify the event loop is alive; force-exit if it dies."""
+        while True:
+            await asyncio.sleep(self._WATCHDOG_INTERVAL)
+            loop = asyncio.get_event_loop()
+            if loop.is_closed() or not loop.is_running():
+                logger.critical(
+                    "Event loop is dead (closed=%s, running=%s), forcing exit",
+                    loop.is_closed(),
+                    loop.is_running(),
+                )
+                os._exit(1)
 
     async def _post_init(self, application: Application):
         """Called after application.initialize() by run_polling()"""
@@ -103,6 +118,7 @@ class TelegramBot:
         if removed:
             logger.info("Startup audio cleanup removed %s stale file(s)", removed)
         await self._set_bot_commands()
+        asyncio.create_task(self._event_loop_watchdog())
         logger.info("✅ Bot initialization complete")
 
     def build(self):
